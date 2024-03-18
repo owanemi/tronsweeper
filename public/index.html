@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deposit</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+        }
+
+        #generate-address-btn {
+            margin-top: 20px;
+            font-size: 30px;
+            border-radius: 15px;
+            cursor: pointer;
+        }
+
+        #instruction {
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        #address-container {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 30px;
+        }
+
+        #qr-code {
+            margin-top: 20px;
+            width: 200px;
+            height: 200px; 
+        }
+    </style>
+</head>
+<body>
+    <button id="generate-address-btn">Make Payment</button>
+    
+    <p id="instruction"></p> 
+    <div id="address-container"></div> 
+    <div id="qr-code-container"></div> 
+
+    <script>
+        document.getElementById('generate-address-btn').addEventListener('click', async () => {
+            try {
+                document.getElementById('instruction').textContent = "Deposit only USDT to this address";
+
+                const response = await fetch('/makeDeposit');
+                const data = await response.json();
+
+                const addressContainer = document.getElementById('address-container');
+                addressContainer.textContent = `${data.address}`;
+
+                const qrCodeContainer = document.getElementById('qr-code-container');
+                const qrCodeImg = document.createElement('img');
+                qrCodeImg.setAttribute('src', data.qrCode);
+                qrCodeImg.setAttribute('id', 'qr-code');
+                qrCodeImg.setAttribute('alt', 'QR Code');
+                qrCodeContainer.innerHTML = ''; 
+                qrCodeContainer.appendChild(qrCodeImg);
+            } catch (error) {
+                console.error('Error occurred:', error);
+            }
+        });
+    </script>
+</body>
+</html>
