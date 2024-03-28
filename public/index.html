@@ -40,15 +40,37 @@
             width: 200px;
             height: 200px; 
         }
+
+        #transaction-hash {
+            margin-top: 20px;
+            font-size: 100px;
+            color: green; /* Change color as needed */
+            border: 1px solid #ccc; /* Border style */
+            padding: 10px; /* Padding inside the container */
+            border-radius: 5px; /* Rounded corners */
+        }
+
+        #balance-container {
+            position: fixed;
+            top: 10px; /* Adjust as needed */
+            right: 10px; /* Adjust as needed */
+            font-size: 20px; /* Adjust as needed */
+            background-color: #291f76;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
+    <div id="balance-container"></div>
     <button id="generate-address-btn">Make Payment</button>
     
     <p id="instruction"></p> 
     <div id="address-container"></div> 
     <div id="qr-code-container"></div> 
+    <div id="transaction-hash-container"></div>
 
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script>
         document.getElementById('generate-address-btn').addEventListener('click', async () => {
             try {
@@ -67,6 +89,45 @@
                 qrCodeImg.setAttribute('alt', 'QR Code');
                 qrCodeContainer.innerHTML = ''; 
                 qrCodeContainer.appendChild(qrCodeImg);
+
+                                // WebSocket connection
+                //                 const socket = new WebSocket('ws://localhost:3000'); // Change to your WebSocket server URL
+                // socket.onopen = function(event) {
+                //     console.log('WebSocket connection established.');
+                // };
+                // socket.onmessage = function(event) {
+                //     const eventData = JSON.parse(event.data);
+                //     if (eventData.event === 'deposit confirmed') {
+                //         console.log('Deposit confirmed. Transaction hash:', eventData.result);
+                        
+                        
+                //         // Display transaction hash in UI
+                //         const transactionHashContainer = document.getElementById('transaction-hash-container');
+
+                        
+                //         transactionHashContainer.textContent = `Transaction Hash: ${eventData.result}`;
+                //     }
+                // };
+
+                Pusher.logToConsole = true;
+
+                // Initialize Pusher
+                const pusher = new Pusher('6a605ba9676a40b66adb', {
+                    cluster: 'eu',
+                  
+                });
+
+                // Subscribe to the channel
+                const channel = pusher.subscribe('my-channel');
+                channel.bind('deposit-confirmed', function(data) {
+                    console.log('Deposit confirmed. Transaction hash:', data.result);
+                    
+                    // Display transaction hash in UI
+                    const transactionHashContainer = document.getElementById('transaction-hash-container');
+                    transactionHashContainer.textContent = `Transaction Hash: ${data.result}`;
+                });
+                
+         
             } catch (error) {
                 console.error('Error occurred:', error);
             }
