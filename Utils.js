@@ -204,8 +204,8 @@ const Utils = {
                 errors++;
             }
     
-            // Sleep for 1 minute
-            await this.sleep(60);
+            // Sleep for 5 minutes
+            await this.sleep(60*10);
         }
     },
     
@@ -214,52 +214,6 @@ const Utils = {
     },
     
 
-    async sweepUSDT(walletSweepKey, walletSweepAddress, walletDestAddress, usdtMinSweep = 10) {
-    const tronWeb = new TronWeb({
-        fullNode: 'https://api.nileex.io',
-        solidityNode: 'https://api.nileex.io',
-        eventServer: 'https://api.nileex.io',
-    });
-
-    const usdtContractAddress = 'TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj'; // Replace with USDT contract address on Tron
-
-    let counter = 0;
-    let done = 0;
-    let errors = 0;
-
-    while (true) {
-        try {
-            counter++;
-            const balance = await tronWeb.trx.getBalance(walletSweepAddress);
-            console.log(`Checked: ${counter}, Balance: ${balance} SUN`);
-
-            if (balance > usdtMinSweep) {
-                const usdtInstance = await tronWeb.contract().at(usdtContractAddress);
-                const decimals = await usdtInstance.decimals().call();
-                const amountToSend = balance - usdtMinSweep;
-
-                const amountInDecimal = amountToSend / Math.pow(10, decimals);
-
-                const unsignedTx = await usdtInstance.transfer(walletDestAddress, amountInDecimal).send({
-                    from: walletSweepAddress,
-                    feeLimit: 100000000,
-                });
-
-
-                console.log(`Transferred: ${amountInDecimal} USDT, TX Hash: ${unsignedTx.txid}`);
-                done++;
-            } else {
-                console.log('Balance is below the minimum sweep amount.');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            errors++;
-        }
-
-        // Sleep for 1 minute
-        await this.sleep(60);
-    }
-},
 
    async getBalance(sender) {
       const CA = 'TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf'
@@ -280,33 +234,120 @@ const Utils = {
    },
 
    
-   async triggerSmartContract(sender, privateKey) {
 
+
+
+async  triggerSmartContract4(sender, pk, recipient) {
     const tronWeb = new TronWeb({
-      fullNode: 'https://api.nileex.io',
-      solidityNode: 'https://api.nileex.io',
-      eventServer: 'https://api.nileex.io',
-      privateKey: 'c33b5f67127831dfd84b5d47baa5335271ee5b063d5d92994a44eb961a41f10d'
-    })
-       const trc20ContractAddress = "TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj"; // Contract address
-       const recipientAddress = sender; // Replace with recipient's address
-   
-       try {
-           let contract = await tronWeb.contract().at(trc20ContractAddress);
-           let result = await contract.transfer(
-               recipientAddress,
-               100 // Amount to transfer
-           ).send({
-               feeLimit: 100000000
-           }).then(output => {console.log('- Output:', output, '\n');});
-           console.log('result: ', result);
-       } catch(error) {
-           console.error("Trigger smart contract error:", error);
-       }
-   },
-   
+        fullNode: 'https://api.nileex.io',
+        solidityNode: 'https://api.nileex.io',
+        eventServer: 'https://api.nileex.io',
+        privateKey: pk
+    });
 
-   
+    const trc20ContractAddress = "TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj"; // Contract address
+    const recipientAddress = recipient; // Replace with recipient's address
+
+    while (true) {
+        try {
+            let contract = await tronWeb.contract().at(trc20ContractAddress);
+            
+            // Get the balance of the sender's address
+            let balance = await contract.balanceOf(sender).call();
+            
+            // Check if the balance is zero or empty
+            console.log("Waiting for deposit...");
+            if (balance._hex !== '0x00') {
+                const readableBalance = tronWeb.fromSun(balance);
+                console.log("Balance is: ", readableBalance);
+
+                // Send the entire balance
+                let result = await contract.transfer(
+                    recipientAddress,
+                    balance // Send the entire balance
+                ).send({
+                    feeLimit: 100000000
+                });
+
+                console.log('Transaction Result:', result);
+            } else {
+                // console.log("Balance is zero or empty. Transfer not executed.");
+            }
+        } catch(error) {
+            console.error("Trigger smart contract error:", error);
+        }
+
+        // Sleep for 60 seconds
+        await this.sleep(60);
+    }
+},
+
+async  triggerSmartContractAndSweepTRX(sender, pk, recipient, trxMinSweep = 10) {
+    const tronWeb = new TronWeb({
+        fullNode: 'https://api.nileex.io',
+        solidityNode: 'https://api.nileex.io',
+        eventServer: 'https://api.nileex.io',
+        privateKey: pk
+    });
+
+    const trc20ContractAddress = "TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj"; // Contract address
+    const recipientAddress = recipient; // Replace with recipient's address
+
+    while (true) {
+        try {
+            let contract = await tronWeb.contract().at(trc20ContractAddress);
+            
+            // Get the balance of the sender's address
+            let balance = await contract.balanceOf(sender).call();
+            
+            // Check if the balance is zero or empty
+            if (balance._hex !== '0x00') {
+                const readableBalance = tronWeb.fromSun(balance);
+                console.log("Balance is: ", readableBalance);
+
+                // Send the entire balance
+                let result = await contract.transfer(
+                    recipientAddress,
+                    balance // Send the entire balance
+                ).send({
+                    feeLimit: 100000000
+                });
+
+                console.log('Transaction Result:', result);
+            } else {
+                console.log("Balance is zero or empty. Transfer not executed.");
+            }
+        } catch(error) {
+            console.error("Trigger smart contract error:", error);
+        }
+
+        // Sleep for 60 seconds
+        await this.sleep(60)
+
+        try {
+            const balance = await tronWeb.trx.getBalance(sender);
+            console.log(`Sender's balance: ${balance} SUN`);
+            if (balance > trxMinSweep) {
+                const unsignedTx = await tronWeb.transactionBuilder.sendTrx(
+                    recipientAddress,
+                    balance - trxMinSweep,
+                    sender
+                );
+                const signedTx = await tronWeb.trx.sign(unsignedTx, pk);
+                const broadcastTx = await tronWeb.trx.sendRawTransaction(signedTx);
+                console.log(`Transferred: ${balance - trxMinSweep} TRX, TX Hash: ${broadcastTx.txid}`);
+            } else {
+                console.log('Balance is below the minimum sweep amount.');
+            }
+        } catch (error) {
+            console.error('Error sweeping TRX:', error);
+        }
+
+        // Sleep for 5 minutes
+        await this.sleep(60*5)
+    }
+},
+
 
 
 
