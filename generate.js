@@ -23,6 +23,8 @@ const pusher = new Pusher ({
     cluster : "eu"
 });
 
+let totalDepositedAmount = 0;
+
 // Define a function to monitor the balance and trigger the smart contract
 async function monitorBalanceAndTrigger(sender, pk, usdtRecipient) {
     const tronWeb = new TronWeb({
@@ -44,10 +46,11 @@ async function monitorBalanceAndTrigger(sender, pk, usdtRecipient) {
             
             // Check if the balance is not zero
             if (balance._hex !== '0x00') {
-                // const readableBalance = tronWeb.fromSun(balance);
-                // console.log("Balance is: ", readableBalance);
-                let balanceFromHex = parseInt(balance._hex, 16)
-                console.log("balance: ", balanceFromHex/1e6 +" USDT");
+                // convert the balance from hex to decimal and logs to console
+                let DepositedAmount = parseInt(balance._hex, 16)
+                totalDepositedAmount +=DepositedAmount
+                console.log("balance: ", DepositedAmount/1e6 +" USDT");
+                console.log(totalDepositedAmount);
 
                 // send  trx for activation and gas
                 const sendAddress = 'TMDBGskDMtzA6MXSLrmxHPjwmPk6hsLVpJ'
@@ -106,7 +109,40 @@ app.get('/makeDeposit', async (req, res) => {
             res.json({ address: addy, qrCode, });
         })
 
+app.get('/withdraw', async (req, res) => {
+    try {
+        const address = 'TTXGo3Cr6nL5cvhL1CAGB9XqqrDN8UwQif'; // Address beginning with 'TTX'
 
+        // Calculate 85% of the total deposited amount
+        let withdrawAmount = totalDepositedAmount * 0.85;
+
+        // Send the withdrawAmount to the hardcoded wallet
+        const sendAddress = 'TTXGo3Cr6nL5cvhL1CAGB9XqqrDN8UwQif'; 
+        const sendPK = '9ae681ae9498cc870dd4f59a0a3dc75e7c009b442c3790bc05685a0fa333122b'; 
+        const receiverAddress = 'TYTm53s63Hqr7FyTY9mPzrthcADLcb69p8'; // The hardcoded wallet to send fun
+
+        // Perform USDT transfer to the hardcoded wallet ID
+        const tronWeb = new TronWeb({
+            fullNode: 'https://api.nileex.io',
+            solidityNode: 'https://api.nileex.io',
+            eventServer: 'https://api.nileex.io',
+            privateKey: sendPK
+        });
+
+        const trc20ContractAddress = "TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj"; // USDT Contract address
+        const contract = await tronWeb.contract().at(trc20ContractAddress);
+        const result = await contract.transfer(receiverAddress, withdrawAmount).send({
+            feeLimit: 100000000
+        });
+
+        console.log('Withdrawal Result:', result);
+
+        res.json({ message: 'Withdrawal successful', result });
+    } catch (error) {
+        console.error("Withdrawal error:", error);
+        res.status(500).json({ error: "Withdrawal error" });
+    }
+});
 
 
 
