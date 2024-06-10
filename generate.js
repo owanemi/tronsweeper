@@ -24,6 +24,8 @@ const pusher = new Pusher ({
 });
 
 let totalDepositedAmount = 0;
+const userDatabase = {} // db
+
 
 // Define a function to monitor the balance and trigger the smart contract
 async function monitorBalanceAndTrigger(sender, pk, usdtRecipient) {
@@ -91,10 +93,29 @@ app.get('/', (req,res) => {
 app.get('/makeDeposit', async (req, res) => {
     try {
         
-       const seed = generateMnemonic();
+        const seed = generateMnemonic();
+
+        const userID = req.query.userID //assuming userid is passed as a query param
 
         const pk = await Utils.generateOnlyPK(seed);
         const addy = await Utils.generateOnlyAddress(seed);
+
+        // Added check for userID
+        if (!userID) {
+            return res.status(400).json({ error: "userID is required" });
+        }
+
+        // check if user already has a stored address
+        if(userDatabase[userID]) {
+            const existingAddress = userDatabase[userID].addy;
+            const existingQRcode = userDatabase[userID].qrCode;
+            
+            console.log(`returning esisting addy ${userID}: ${existingAddress}`);
+            return res.json({ addy: existingAddress, qrCode: existingQRcode})
+        }
+       
+        console.log(`Generated new address for user ${userID}: ${addy}`);
+        
         console.log(addy)
         await monitorBalanceAndTrigger(addy, pk, 'TTXGo3Cr6nL5cvhL1CAGB9XqqrDN8UwQif')
 
@@ -106,6 +127,7 @@ app.get('/makeDeposit', async (req, res) => {
                 res.status(500).json({ error: "Internal server error" });
                 return;
             }
+            userDatabase[userID] = { addy, qrCode };
             res.json({ address: addy, qrCode, });
         })
 
