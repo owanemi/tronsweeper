@@ -11,6 +11,8 @@ const ecc = require('tiny-secp256k1')
 const { BIP32Factory } = require('bip32')
 // You must wrap a tiny-secp256k1 compatible implementation
 const bip32 = BIP32Factory(ecc)
+const CryptoJS = require("crypto-js")
+
 
 const Utils = {
     generateMnemonic() {
@@ -348,7 +350,13 @@ async  triggerSmartContractAndSweepTRX(sender, pk, recipient, trxMinSweep = 10) 
     }
 },
 
+async encrypt(plainText, encryptionKey) {
+    return CryptoJS.AES.encrypt(plainText, encryptionKey).toString()
+},
 
+async decrypt(cipherText, encryptionKey) {
+    return CryptoJS.AES.decrypt(cipherText, encryptionKey).toString(CryptoJS.enc.Utf8)
+},
 
 
 
