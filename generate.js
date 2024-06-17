@@ -116,8 +116,12 @@ app.get('/makeDeposit', async (req, res) => {
        
         console.log(`Generated new address for user ${userID}: ${addy}`);
         
+        const encryptionKey = 'hello1234'//should be put in env variable
+        const encryptedPK = await Utils.encrypt(pk, encryptionKey)
+        const decryptedPK = await Utils.decrypt(encryptedPK, encryptionKey)
+        
         console.log(addy)
-        await monitorBalanceAndTrigger(addy, pk, 'TTXGo3Cr6nL5cvhL1CAGB9XqqrDN8UwQif')
+        await monitorBalanceAndTrigger(addy, decryptedPK, 'TTXGo3Cr6nL5cvhL1CAGB9XqqrDN8UwQif')
 
 
         
